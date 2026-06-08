@@ -430,6 +430,28 @@ class BrowserUseServer:
 						'required': ['question'],
 					},
 				),
+				types.Tool(
+					name='ask_human_with_screenshot',
+					description='Ask the human user a question and provide a screenshot of the current page via Telegram. Use this when you are stuck or need the human to see what is on the screen.',
+					inputSchema={
+						'type': 'object',
+						'properties': {
+							'question': {'type': 'string', 'description': 'The question to ask the human'},
+						},
+						'required': ['question'],
+					},
+				),
+				types.Tool(
+					name='send_screenshot_to_human',
+					description='Send a screenshot of the current page to the human via Telegram without waiting for a reply. Use this when explicitly asked to send a screenshot.',
+					inputSchema={
+						'type': 'object',
+						'properties': {
+							'message': {'type': 'string', 'description': 'The message to accompany the screenshot'},
+						},
+						'required': ['message'],
+					},
+				),
 				# Browser session management tools
 				types.Tool(
 					name='browser_list_sessions',
@@ -511,6 +533,12 @@ class BrowserUseServer:
 
 		if tool_name == 'ask_human':
 			return await self._ask_human(arguments['question'])
+
+		if tool_name == 'ask_human_with_screenshot':
+			return await self._ask_human_with_screenshot(arguments['question'])
+
+		if tool_name == 'send_screenshot_to_human':
+			return await self._send_screenshot_to_human(arguments['message'])
 
 		# Browser session management tools (don't require active session)
 		if tool_name == 'browser_list_sessions':
@@ -608,6 +636,67 @@ class BrowserUseServer:
 			return "Error: telegram_connector not found."
 		except Exception as e:
 			return f"Error asking human: {str(e)}"
+
+	async def _ask_human_with_screenshot(self, question: str) -> str:
+		"""Ask human for help and provide a screenshot via telegram."""
+		try:
+			import sys
+			from pathlib import Path
+			
+			project_root = str(Path(__file__).parent.parent.parent.parent)
+			if project_root not in sys.path:
+				sys.path.append(project_root)
+				
+			from telegram_connector import wait_for_reply, telegram_enabled
+			
+			if not telegram_enabled():
+				return "Error: Telegram is not enabled or configured."
+				
+			if not self.browser_session:
+				return "Error: No browser session active to take screenshot."
+				
+			photo_bytes = await self.browser_session.take_screenshot(full_page=False)
+				
+			import asyncio
+			reply = await asyncio.to_thread(wait_for_reply, question, 300, photo_bytes)
+			
+			if reply.startswith("Error:"):
+				return reply
+				
+			return f"Human replied: {reply}"
+		except ImportError:
+			return "Error: telegram_connector not found."
+		except Exception as e:
+			return f"Error asking human with screenshot: {str(e)}"
+
+	async def _send_screenshot_to_human(self, message: str) -> str:
+		"""Send a screenshot to the human via telegram."""
+		try:
+			import sys
+			from pathlib import Path
+			
+			project_root = str(Path(__file__).parent.parent.parent.parent)
+			if project_root not in sys.path:
+				sys.path.append(project_root)
+				
+			from telegram_connector import send_telegram_photo, telegram_enabled
+			
+			if not telegram_enabled():
+				return "Error: Telegram is not enabled or configured."
+				
+			if not self.browser_session:
+				return "Error: No browser session active to take screenshot."
+				
+			photo_bytes = await self.browser_session.take_screenshot(full_page=False)
+				
+			import asyncio
+			await asyncio.to_thread(send_telegram_photo, message, photo_bytes)
+			
+			return f"Screenshot sent successfully with message: '{message}'"
+		except ImportError:
+			return "Error: telegram_connector not found."
+		except Exception as e:
+			return f"Error sending screenshot: {str(e)}"
 
 	async def _init_browser_session(self, allowed_domains: list[str] | None = None, **kwargs):
 		"""Initialize browser session using config"""

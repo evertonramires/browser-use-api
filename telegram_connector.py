@@ -39,6 +39,36 @@ def send_telegram_message(message: str) -> None:
     except Exception as e:
         print(f"⚠️ Failed to send Telegram message: {e}")
 
+def send_telegram_photo(caption: str, photo_bytes: bytes) -> None:
+    if not telegram_token or not telegram_chat_id or not telegram_enabled():
+        return
+        
+    url = f"https://api.telegram.org/bot{telegram_token}/sendPhoto"
+    boundary = "----WebKitFormBoundary7MA4YWxkTrZu0gW"
+    
+    body = bytearray()
+    body.extend(f"--{boundary}\r\n".encode("utf-8"))
+    body.extend(b'Content-Disposition: form-data; name="chat_id"\r\n\r\n')
+    body.extend(f"{telegram_chat_id}\r\n".encode("utf-8"))
+    
+    body.extend(f"--{boundary}\r\n".encode("utf-8"))
+    body.extend(b'Content-Disposition: form-data; name="caption"\r\n\r\n')
+    body.extend(f"{caption}\r\n".encode("utf-8"))
+    
+    body.extend(f"--{boundary}\r\n".encode("utf-8"))
+    body.extend(b'Content-Disposition: form-data; name="photo"; filename="screenshot.png"\r\n')
+    body.extend(b'Content-Type: image/png\r\n\r\n')
+    body.extend(photo_bytes)
+    body.extend(f"\r\n--{boundary}--\r\n".encode("utf-8"))
+    
+    req = urllib.request.Request(url, data=bytes(body))
+    req.add_header("Content-Type", f"multipart/form-data; boundary={boundary}")
+    
+    try:
+        urllib.request.urlopen(req, timeout=30)
+    except Exception as e:
+        print(f"⚠️ Failed to send Telegram photo: {e}")
+
 def read_telegram_messages() -> list[str]:
     global last_received_update_id
     if not telegram_token or not telegram_enabled():
@@ -67,10 +97,13 @@ is_waiting_for_reply = False
 agent_reply_event = threading.Event()
 latest_agent_reply = None
 
-def wait_for_reply(question: str, timeout: int = 300) -> str:
+def wait_for_reply(question: str, timeout: int = 300, photo_bytes: bytes = None) -> str:
     global is_waiting_for_reply, latest_agent_reply
     
-    send_telegram_message(f"🙋 Agent needs your help:\n\n{question}")
+    if photo_bytes:
+        send_telegram_photo(f"🙋 Agent needs your help:\n\n{question}", photo_bytes)
+    else:
+        send_telegram_message(f"🙋 Agent needs your help:\n\n{question}")
     
     # Wait for up to timeout seconds
     is_waiting_for_reply = True

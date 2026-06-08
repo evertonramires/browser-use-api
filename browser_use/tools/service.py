@@ -616,6 +616,66 @@ class Tools(Generic[Context]):
 			except Exception as e:
 				return ActionResult(error=f"Failed to ask human: {str(e)}")
 
+		@self.registry.action('Ask the human for help and provide a screenshot of the current page via Telegram. Use this when you are stuck or need the human to see what is on the screen.')
+		async def ask_human_with_screenshot(question: str, browser_session: BrowserSession):
+			try:
+				import sys
+				from pathlib import Path
+				
+				project_root = str(Path(__file__).parent.parent.parent.parent)
+				if project_root not in sys.path:
+					sys.path.append(project_root)
+					
+				from telegram_connector import wait_for_reply, telegram_enabled
+				
+				if not telegram_enabled():
+					return ActionResult(error="Telegram is not enabled or configured.")
+					
+				logger.info(f'📸 Taking screenshot and asking human via Telegram: {question}')
+				
+				# Capture screenshot as raw bytes
+				photo_bytes = await browser_session.take_screenshot(full_page=False)
+				
+				# Wait for reply in a thread to avoid blocking asyncio loop completely
+				reply = await asyncio.to_thread(wait_for_reply, question, 300, photo_bytes)
+				
+				if reply.startswith("Error:"):
+					return ActionResult(error=reply)
+					
+				memory = f"Asked human with screenshot: '{question}'\nHuman replied: '{reply}'"
+				return ActionResult(extracted_content=memory, long_term_memory=memory)
+			except Exception as e:
+				return ActionResult(error=f"Failed to ask human with screenshot: {str(e)}")
+
+		@self.registry.action('Send a screenshot of the current page to the human via Telegram. Use this when the user explicitly requests you to send them a screenshot of a page.')
+		async def send_screenshot_to_human(message: str, browser_session: BrowserSession):
+			try:
+				import sys
+				from pathlib import Path
+				
+				project_root = str(Path(__file__).parent.parent.parent.parent)
+				if project_root not in sys.path:
+					sys.path.append(project_root)
+					
+				from telegram_connector import send_telegram_photo, telegram_enabled
+				
+				if not telegram_enabled():
+					return ActionResult(error="Telegram is not enabled or configured.")
+					
+				logger.info(f'📸 Taking screenshot and sending to human via Telegram: {message}')
+				
+				# Capture screenshot as raw bytes
+				photo_bytes = await browser_session.take_screenshot(full_page=False)
+				
+				# Send the photo without waiting for a reply
+				import asyncio
+				await asyncio.to_thread(send_telegram_photo, message, photo_bytes)
+				
+				memory = f"Sent screenshot to human with message: '{message}'"
+				return ActionResult(extracted_content=memory, long_term_memory=memory)
+			except Exception as e:
+				return ActionResult(error=f"Failed to send screenshot: {str(e)}")
+
 
 		# Helper function for coordinate conversion
 		def _convert_llm_coordinates_to_viewport(llm_x: int, llm_y: int, browser_session: BrowserSession) -> tuple[int, int]:
