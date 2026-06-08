@@ -8,8 +8,6 @@ from dotenv import load_dotenv
 from fastapi import BackgroundTasks, FastAPI, HTTPException
 from pydantic import BaseModel
 
-# Add the parent directory to sys.path just like real_browser.py
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 load_dotenv()
 
