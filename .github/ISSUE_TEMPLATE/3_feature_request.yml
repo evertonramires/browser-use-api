@@ -1,8 +1,6 @@
 name: 💡 New Feature or Enhancement Request
 description: Suggest an idea or improvement for the browser-use library or Agent capabilities
 title: "Feature Request: ..."
-assignees:
-  - pirate
 type: 'Enhancement'
 labels: ['enhancement']
 body:
@@ -38,7 +36,7 @@ body:
         A description of any troubleshooting, alternative approaches, workarounds, or other ideas you've considered to fix the problem.
       placeholder: |
         e.g. I tried upgrading to the latest version and telling it to hover in the prompt. I also tried 
-        telling the agent to ask for human help (using a custom controller action) when it gets to this 
+        telling the agent to ask for human help (using a custom tools action) when it gets to this 
         step, then I manually click a browser extension in the navbar that automates the mouse movevement.
     validations:
       required: false
@@ -48,7 +46,7 @@ body:
     attributes:
       label: What version of browser-use are you currently using?
       description: |
-        Run `pip show browser-use` or `git log -n 1` and share the exact number or git hash. DO NOT JUST ENTER `latest release` OR `main`.  
+        Run `uv pip show browser-use` or `git log -n 1` and share the exact number or git hash. DO NOT JUST ENTER `latest release` OR `main`.
         We need to know what version of the browser-use library you're running in order to contextualize your feature request.  
         Sometimes features are already available and just need to be enabled with config on certain versions.
       placeholder: "e.g. 0.1.48 or 62760baaefd"
@@ -60,12 +58,12 @@ body:
       value: |
         ---
         > [!IMPORTANT]
-        > 🙏 Please **go check *right now before submitting* that that you have tried the [⬆️ LATEST VERSION](https://github.com/browser-use/browser-use/releases)**.
-        > 🚀 We ship new features every day and we might've already added a solution to your need yesterday!  
+        > 🙏 Please **go check *right now before filling this out* that that you have tried the [⬆️ LATEST VERSION](https://github.com/browser-use/browser-use/releases)**.
+        > 🚀 We ship *hundreds* of improvements a day and we might've already added a solution to your need yesterday!  
         > <a href="https://github.com/browser-use/browser-use/releases"><img src="https://github.com/user-attachments/assets/4cd34ee6-bafb-4f24-87e2-27a31dc5b9a4" width="500px"/></a>
         > If you are running an old version, the **first thing we will ask you to do is *try the latest `beta`***:
         > - 🆕 [`beta`](https://docs.browser-use.com/development/local-setup):   `uv pip install --upgrade git+https://github.com/browser-use/browser-use.git@main`
-        > - 📦 [`stable`](https://pypi.org/project/browser-use/#history): `uv pip install --upgrade browser-use`
+        > - 📦 [`stable`](https://pypi.org/project/browser-use/#history): `pip install --upgrade browser-use`
 
   - type: checkboxes
     id: priority
