@@ -6,15 +6,28 @@ from typing import Dict, Optional
 
 from dotenv import load_dotenv
 from fastapi import BackgroundTasks, FastAPI, HTTPException
+from contextlib import asynccontextmanager
 from pydantic import BaseModel
+import threading
+import time
+import json
+import urllib.request
+import urllib.error
 
+from telegram_connector import telegram_enabled, send_telegram_message, read_telegram_messages
 
 load_dotenv()
 
 from browser_use import Agent, Browser
 from browser_use.llm.azure.chat import ChatOpenAILike
 
-app = FastAPI(title="Browser Use Agent API")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    if telegram_enabled():
+        threading.Thread(target=poll_telegram, daemon=True).start()
+    yield
+
+app = FastAPI(title="Browser Use Agent API", lifespan=lifespan)
 
 # Simple in-memory task store
 # In a production environment, you would use a database (e.g., Redis, PostgreSQL)
@@ -44,6 +57,7 @@ def select_chrome_profile() -> str | None:
 
 async def run_agent_task(task_id: str, task: str):
     tasks[task_id]["status"] = "running"
+    send_telegram_message(f"🚀 Started task: {task}")
     browser = None
     try:
         profile = select_chrome_profile()
@@ -66,9 +80,11 @@ async def run_agent_task(task_id: str, task: str):
         tasks[task_id]["status"] = "completed"
         # The agent history contains the final extracted output
         tasks[task_id]["result"] = history.final_result()
+        send_telegram_message(f"✅ Task completed!\n\nResult: {history.final_result()}")
     except Exception as e:
         tasks[task_id]["status"] = "failed"
         tasks[task_id]["error"] = str(e)
+        send_telegram_message(f"❌ Task failed!\n\nError: {str(e)}")
     finally:
         if browser:
             await browser.close()
@@ -107,6 +123,23 @@ async def get_task_status(task_id: str):
         result=task_data["result"],
         error=task_data["error"]
     )
+
+
+def poll_telegram():
+    while True:
+        try:
+            messages = read_telegram_messages()
+            for msg in messages:
+                url = "http://127.0.0.1:8000/task"
+                data = json.dumps({"task": msg}).encode("utf-8")
+                req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
+                try:
+                    urllib.request.urlopen(req, timeout=10)
+                except Exception as e:
+                    print(f"Failed to submit task from telegram: {e}")
+        except Exception as e:
+            print(f"Telegram polling error: {e}")
+        time.sleep(2)
 
 
 if __name__ == '__main__':
