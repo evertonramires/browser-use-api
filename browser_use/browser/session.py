@@ -998,14 +998,14 @@ class BrowserSession(BaseModel):
 				if url.startswith('http') and current_url.startswith('http')
 				else False
 			)
-			timeout = 3.0 if same_domain else 8.0
+			timeout = 30.0 if same_domain else 80.0
 
 		nav_start_time = asyncio.get_event_loop().time()
 
 		# Wrap Page.navigate() with timeout — heavy sites can block here for 10s+
 		# Use nav_timeout parameter if provided, otherwise default to 20.0
 		if nav_timeout is None:
-			nav_timeout = 20.0
+			nav_timeout = 200.0
 		try:
 			nav_result = await asyncio.wait_for(
 				cdp_session.cdp_client.send.Page.navigate(

@@ -192,7 +192,7 @@ class Agent(Generic[Context, AgentStructuredOutput]):
 		include_tool_call_examples: bool = False,
 		vision_detail_level: Literal['auto', 'low', 'high'] = 'auto',
 		llm_timeout: int | None = None,
-		step_timeout: int = 180,
+		step_timeout: int = 600,
 		directly_open_url: bool = True,
 		include_recent_events: bool = False,
 		sample_images: list[ContentPartTextParam | ContentPartImageParam] | None = None,
@@ -268,7 +268,7 @@ class Agent(Generic[Context, AgentStructuredOutput]):
 				elif 'o3' in model_name or 'claude' in model_name or 'sonnet' in model_name or 'deepseek' in model_name:
 					return 90
 				else:
-					return 75  # Default timeout
+					return 300  # Default timeout
 
 			llm_timeout = _get_model_timeout(llm)
 
@@ -3052,7 +3052,7 @@ class Agent(Generic[Context, AgentStructuredOutput]):
 		try:
 			import asyncio
 
-			response = await asyncio.wait_for(llm.ainvoke([SystemMessage(content=system_prompt), user_message]), timeout=120.0)
+			response = await asyncio.wait_for(llm.ainvoke([SystemMessage(content=system_prompt), user_message]), timeout=1200.0)
 
 			current_url = await self.browser_session.get_current_page_url()
 			extracted_content = (
@@ -3313,7 +3313,7 @@ class Agent(Generic[Context, AgentStructuredOutput]):
 	async def _wait_for_minimum_elements(
 		self,
 		min_elements: int,
-		timeout: float = 30.0,
+		timeout: float = 300.0,
 		poll_interval: float = 1.0,
 	) -> BrowserStateSummary | None:
 		"""Wait for the page to have at least min_elements interactive elements.
@@ -3417,7 +3417,7 @@ class Agent(Generic[Context, AgentStructuredOutput]):
 			if needs_element_matching:
 				min_elements = self._count_expected_elements_from_history(history_item)
 				if min_elements > 0:
-					state = await self._wait_for_minimum_elements(min_elements, timeout=15.0, poll_interval=1.0)
+					state = await self._wait_for_minimum_elements(min_elements, timeout=150.0, poll_interval=1.0)
 				else:
 					state = await self.browser_session.get_browser_state_summary(include_screenshot=False)
 			else:

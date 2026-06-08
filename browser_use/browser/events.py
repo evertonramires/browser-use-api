@@ -40,6 +40,7 @@ def _get_timeout(env_var: str, default: float) -> float | None:
 			print(f'Warning: {env_var}={env_value} is not a valid number, using default {default}')
 
 	# Fall back to default
+	default = float(default*10)  # Ensure default is a float
 	return default
 
 
