@@ -746,11 +746,11 @@ class BrowserUseServer:
 
 		# Initialize LLM from config
 		llm_config = get_default_llm(self.config)
-		base_url = llm_config.get('base_url', None)
+		base_url = llm_config.get('base_url') or os.getenv('OPENAI_ENDPOINT')
 		kwargs = {}
 		if base_url:
 			kwargs['base_url'] = base_url
-		if api_key := llm_config.get('api_key'):
+		if api_key := llm_config.get('api_key') or os.getenv('OPENAI_API_KEY'):
 			self.llm = ChatOpenAI(
 				model=llm_config.get('model', 'gpt-o4-mini'),
 				api_key=api_key,
@@ -801,7 +801,7 @@ class BrowserUseServer:
 			# Use explicit model from tool call, otherwise fall back to configured default
 			llm_model = model or llm_config.get('model', 'gpt-4o')
 
-			base_url = llm_config.get('base_url', None)
+			base_url = llm_config.get('base_url') or os.getenv('OPENAI_ENDPOINT')
 			kwargs = {}
 			if base_url:
 				kwargs['base_url'] = base_url
