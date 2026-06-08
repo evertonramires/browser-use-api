@@ -126,17 +126,22 @@ async def get_task_status(task_id: str):
 
 
 def poll_telegram():
+    import telegram_connector
     while True:
         try:
             messages = read_telegram_messages()
             for msg in messages:
-                url = "http://127.0.0.1:8000/task"
-                data = json.dumps({"task": msg}).encode("utf-8")
-                req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
-                try:
-                    urllib.request.urlopen(req, timeout=10)
-                except Exception as e:
-                    print(f"Failed to submit task from telegram: {e}")
+                if telegram_connector.is_waiting_for_reply:
+                    telegram_connector.latest_agent_reply = msg
+                    telegram_connector.agent_reply_event.set()
+                else:
+                    url = "http://127.0.0.1:8000/task"
+                    data = json.dumps({"task": msg}).encode("utf-8")
+                    req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
+                    try:
+                        urllib.request.urlopen(req, timeout=10)
+                    except Exception as e:
+                        print(f"Failed to submit task from telegram: {e}")
         except Exception as e:
             print(f"Telegram polling error: {e}")
         time.sleep(2)

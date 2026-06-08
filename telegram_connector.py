@@ -62,3 +62,29 @@ def read_telegram_messages() -> list[str]:
         for update in updates
         if "message" in update and "text" in update["message"]
     ]
+
+is_waiting_for_reply = False
+agent_reply_event = threading.Event()
+latest_agent_reply = None
+
+def wait_for_reply(question: str, timeout: int = 300) -> str:
+    global is_waiting_for_reply, latest_agent_reply
+    
+    send_telegram_message(f"🙋 Agent needs your help:\n\n{question}")
+    
+    # Wait for up to timeout seconds
+    is_waiting_for_reply = True
+    agent_reply_event.clear()
+    latest_agent_reply = None
+    
+    # Drain any existing messages first so we don't read old ones
+    _ = read_telegram_messages()
+    
+    agent_reply_event.wait(timeout)
+    is_waiting_for_reply = False
+    
+    if latest_agent_reply:
+        send_telegram_message(f"✅ Received your reply: {latest_agent_reply}")
+        return latest_agent_reply
+    else:
+        return "Error: Human did not reply within the timeout period."

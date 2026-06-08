@@ -586,6 +586,37 @@ class Tools(Generic[Context]):
 			await asyncio.sleep(actual_seconds)
 			return ActionResult(extracted_content=memory, long_term_memory=memory)
 
+		@self.registry.action('Ask the human for help or clarification via Telegram. Use this when you are stuck, need clarification, or need a two-factor authentication code. It will wait for the human to reply.')
+		async def ask_human(question: str):
+			try:
+				import sys
+				from pathlib import Path
+				
+				# Ensure telegram_connector can be imported
+				project_root = str(Path(__file__).parent.parent.parent.parent)
+				if project_root not in sys.path:
+					sys.path.append(project_root)
+					
+				from telegram_connector import wait_for_reply, telegram_enabled
+				
+				if not telegram_enabled():
+					return ActionResult(error="Telegram is not enabled or configured.")
+					
+				logger.info(f'🙋 Asking human via Telegram: {question}')
+				
+				# Wait for reply in a thread to avoid blocking asyncio loop completely, 
+				# though we can run it in a threadpool
+				reply = await asyncio.to_thread(wait_for_reply, question, 300)
+				
+				if reply.startswith("Error:"):
+					return ActionResult(error=reply)
+					
+				memory = f"Asked human: '{question}'\nHuman replied: '{reply}'"
+				return ActionResult(extracted_content=memory, long_term_memory=memory)
+			except Exception as e:
+				return ActionResult(error=f"Failed to ask human: {str(e)}")
+
+
 		# Helper function for coordinate conversion
 		def _convert_llm_coordinates_to_viewport(llm_x: int, llm_y: int, browser_session: BrowserSession) -> tuple[int, int]:
 			"""Convert coordinates from LLM screenshot size to original viewport size."""

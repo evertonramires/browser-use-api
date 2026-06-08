@@ -419,6 +419,17 @@ class BrowserUseServer:
 						'required': ['task'],
 					},
 				),
+				types.Tool(
+					name='ask_human',
+					description='Ask the human user a question via Telegram and wait for their reply. Use this when you are stuck, need clarification, or need a two-factor authentication code.',
+					inputSchema={
+						'type': 'object',
+						'properties': {
+							'question': {'type': 'string', 'description': 'The question to ask the human'},
+						},
+						'required': ['question'],
+					},
+				),
 				# Browser session management tools
 				types.Tool(
 					name='browser_list_sessions',
@@ -498,6 +509,9 @@ class BrowserUseServer:
 				use_vision=arguments.get('use_vision', True),
 			)
 
+		if tool_name == 'ask_human':
+			return await self._ask_human(arguments['question'])
+
 		# Browser session management tools (don't require active session)
 		if tool_name == 'browser_list_sessions':
 			return await self._list_sessions()
@@ -567,6 +581,33 @@ class BrowserUseServer:
 				return await self._close_tab(arguments['tab_id'])
 
 		return f'Unknown tool: {tool_name}'
+
+	async def _ask_human(self, question: str) -> str:
+		"""Ask human for help via telegram."""
+		try:
+			import sys
+			from pathlib import Path
+			
+			project_root = str(Path(__file__).parent.parent.parent.parent)
+			if project_root not in sys.path:
+				sys.path.append(project_root)
+				
+			from telegram_connector import wait_for_reply, telegram_enabled
+			
+			if not telegram_enabled():
+				return "Error: Telegram is not enabled or configured."
+				
+			import asyncio
+			reply = await asyncio.to_thread(wait_for_reply, question, 300)
+			
+			if reply.startswith("Error:"):
+				return reply
+				
+			return f"Human replied: {reply}"
+		except ImportError:
+			return "Error: telegram_connector not found."
+		except Exception as e:
+			return f"Error asking human: {str(e)}"
 
 	async def _init_browser_session(self, allowed_domains: list[str] | None = None, **kwargs):
 		"""Initialize browser session using config"""
