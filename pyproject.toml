@@ -233,3 +233,6 @@ dev-dependencies = [
     "pytest-timeout==2.4.0",
     "pydantic_settings==2.12.0",
 ]
+
+[tool.uv.workspace]
+members = ["examples/browser/default"]

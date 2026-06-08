@@ -6,6 +6,8 @@ import asyncio
 import os
 import sys
 
+from browser_use.llm.azure.chat import ChatOpenAILike
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from dotenv import load_dotenv
@@ -26,21 +28,23 @@ def select_chrome_profile() -> str | None:
 		print(f'  {i}. {p["name"]}')
 
 	while True:
-		choice = input(f'\nSelect profile (1-{len(profiles)}): ').strip()
-		if choice.isdigit() and 1 <= int(choice) <= len(profiles):
-			return profiles[int(choice) - 1]['directory']
+		choice = 1
+		# choice = input(f'\nSelect profile (1-{len(profiles)}): ').strip()
+		# if choice.isdigit() and 1 <= int(choice) <= len(profiles):
+		return profiles[int(choice) - 1]['directory']
 		print('Invalid choice, try again.')
 
 
 async def main():
 	profile = select_chrome_profile()
-	browser = Browser.from_system_chrome(profile_directory=profile)
+	browser = Browser.from_system_chrome(profile_directory=profile, highlight_elements=True)
 
 	agent = Agent(
-		llm=ChatGoogle(model='gemini-3-flash-preview'),
-		task='go to amazon.com and search for pens to draw on whiteboards',
+		llm=ChatOpenAILike(model='browser',base_url=os.getenv('OPENAI_ENDPOINT'), api_key=os.getenv('OPENAI_API_KEY')),
+		task='pick a random news portal and tell me 3 random news from today',
 		browser=browser,
 	)
+	
 	await agent.run()
 
 
