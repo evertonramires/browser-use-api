@@ -234,5 +234,3 @@ dev-dependencies = [
     "pydantic_settings==2.12.0",
 ]
 
-[tool.uv.workspace]
-members = ["examples/browser/default"]
